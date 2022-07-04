@@ -250,7 +250,7 @@ if not(train):
         plt.plot(n_inDim_list[ii],loss_val_list[ii],'r',label='Validation')
         plt.plot(n_inDim_list[ii],loss_list[ii],'b',label='Train')
 
-    np.savetxt("results/"+model_name+"/losses.txt", (n_inDim_list[0,:],np.mean(loss_list,0), np.mean(loss_val_list,0)) )
+    np.savetxt("results/"+model_name+"/losses.txt", (n_inDim_list[0,:],np.mean(loss_list,0), np.mean(loss_val_list,0)),fmt='%.3f')
 
 
     plt.figure(1)

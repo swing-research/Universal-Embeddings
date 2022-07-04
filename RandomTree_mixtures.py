@@ -233,7 +233,7 @@ if not(train):
         plt.plot(n_mixture_list[ii],loss_val_list[ii],'r',label='Validation')
         plt.plot(n_mixture_list[ii],loss_list[ii],'b',label='Train')
 
-    np.savetxt("results/"+model_name+"/losses.txt", (n_mixture_list[0,:],np.mean(loss_list,0), np.mean(loss_val_list,0)) )
+    np.savetxt("results/"+model_name+"/losses.txt", (n_mixture_list[0,:],np.mean(loss_list,0), np.mean(loss_val_list,0)),fmt='%.3f' )
 
 
     plt.figure(1)
@@ -242,5 +242,5 @@ if not(train):
     nx.draw(G, pos, node_size=120, node_color="#09a433",alpha =0.9, width=1)
     nx.draw_networkx_nodes(G, pos=pos, node_size=120, nodelist=idx_origin[ptsFixed], node_color="#000000",alpha =0.9)
     nx.draw_networkx_nodes(G, pos=pos, node_size=120, nodelist=idx_origin[ptsEval], node_color="#e5e0e0",alpha =0.9)
-    plt.savefig("results/"+model_name+"/TreeTrue.png")
+    plt.savefig("results/"+model_name+"/TreeTrue.pdf")
 

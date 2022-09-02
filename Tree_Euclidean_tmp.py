@@ -34,7 +34,7 @@ load_model = False # load previously trained model
 lr = 1e-4 # learning rate
 epochs = 200000 # number of epochs
 outDim = 5*3 # dimension of the output, number of mixtures x 3
-Nlatent = 512 # dimension of latent layers
+Nlatent = 50 # dimension of latent layers
 alpha = 1 # exponent in the distqnces
 Ntest = 500 # training iterations between display
 

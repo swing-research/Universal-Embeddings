@@ -19,7 +19,7 @@ Illustrate the embedding into Euclidean space of a tree using the proposed proba
 """
 
 # Save
-model_name = "Tree_Euclidean" # results will be saved in results/model_name
+model_name = "Tree_Euclidean_tmp" # results will be saved in results/model_name
 
 # Data generation
 Nlevel = 8 # number of tree level

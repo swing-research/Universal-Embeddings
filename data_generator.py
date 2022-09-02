@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 import networkx as nx
 import matplotlib.pyplot as plt; plt.ion()
 
@@ -35,7 +36,7 @@ def tree(Nlevel=6,Nrep=2,seed=42):
     Npts = len(G.nodes)
     dist_tree = np.zeros((Npts,Npts))
     index_list = np.random.choice(index_list,len(index_list),replace=False)
-    for i in range(index_list.shape[0]):
+    for i in tqdm(range(index_list.shape[0])):
         for j in range(index_list.shape[0]):
             dist_tree[i,j] = nx.dijkstra_path_length(G,index_list[i],index_list[j])
     dist_tree /= dist_tree.max()

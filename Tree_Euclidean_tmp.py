@@ -29,6 +29,7 @@ Ntrain = 400 # number of training points
 inDim = 20 # number of anchors
 
 # Training
+load_sampler = True # load tree (save few minutes)
 train = True # train the model
 load_model = False # load previously trained model
 lr = 1e-4 # learning rate
@@ -56,8 +57,15 @@ if not os.path.exists("results/"+model_name):
 ### Define the data
 #######################################
 # Generate tree
-G, dist_tree, idx_origin = data_generator.tree(Nlevel,Nrep,seed)
-Npts = dist_tree.shape[0]
+if not(load_sampler):
+    # Generate tree
+    G, dist_tree, idx_origin = data_generator.tree(Nlevel,Nrep,seed)
+    np.savez("results/"+model_name+"/tree.npz",G=G,dist_tree=dist_tree,idx_origin=idx_origin)
+else:
+    dat = np.load("results/"+model_name+"/tree.npz")
+    G = dat['G']
+    dist_tree = dat['dist_tree']
+    idx_origin = dat['idx_origin']
 
 # Compute distance matrix
 dist_tree_t = torch.tensor(dist_tree).type(torch_type).to(device)

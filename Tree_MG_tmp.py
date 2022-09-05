@@ -59,11 +59,12 @@ if not os.path.exists("results/"+model_name):
 if not(load_sampler):
     # Generate tree
     G, dist_tree, idx_origin = data_generator.tree(Nlevel,Nrep,seed)
-    Npts = dist_tree.shape[0]
     np.savez("results/"+model_name+"/tree.npz",G=G,dist_tree=dist_tree,idx_origin=idx_origin)
 else:
     dat = np.load("results/"+model_name+"/tree.npz")
-    sampledPts = dat['sampledPts']
+    G = dat['G']
+    dist_tree = dat['dist_tree']
+    idx_origin = dat['idx_origin']
 
 # Compute distance matrix
 dist_tree_t = torch.tensor(dist_tree).type(torch_type).to(device)

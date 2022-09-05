@@ -32,9 +32,9 @@ Train with different number of anchors and see how it affects the embedding.
 model_name = "RandomTree_MG_anchors_tmp" # results will be saved in results/model_name
 
 # Data generation
-Npts = 2000 # number of vertices
+Npts = 511 # number of vertices
 seed = 42 # seed parameter
-NEval = 7 # number of testing points
+NEval = 400 # number of testing points
 
 # Training
 lr = 1e-5 # learning rate
@@ -42,7 +42,7 @@ epochs = 10000 # number of epochs
 outDim = 5*3 # dimension of the output, number of mixtures x 3
 Nlatent = 32 # dimension of latent layers
 alpha = 1 # exponent in the distqnces
-Ntest = 500 # training iterations between display
+Ntest = 111 # training iterations between display
 
 
 #######################################

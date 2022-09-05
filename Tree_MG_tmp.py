@@ -30,7 +30,7 @@ inDim = 20 # number of anchors
 # Training
 train = True # train the model
 load_model = False # load previously trained model
-lr = 1e-4 # learning rate
+lr = 1e-5 # learning rate
 epochs = 1000000 # number of epochs
 outDim = 5*3 # dimension of the output, number of mixtures x 3
 Nlatent = 32 # dimension of latent layers

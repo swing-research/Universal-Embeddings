@@ -100,7 +100,7 @@ if train:
     t0 = time.time()
     for ep in range(epochs):
         # step size decay
-        if ep%(np.max([epochs//100,Ntest]))==0 and ep!=0:
+        if ep%(np.max([epochs//1000,Ntest]))==0 and ep!=0:
             for param_group in optimizer.param_groups:
                 param_group["lr"] = lr*(1-(1-0.1)*ep/epochs)
 

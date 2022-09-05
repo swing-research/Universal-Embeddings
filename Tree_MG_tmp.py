@@ -28,6 +28,7 @@ Ntrain = 400 # number of training points
 inDim = 20 # number of anchors
 
 # Training
+load_sampler = True # load tree (save few minutes)
 train = True # train the model
 load_model = False # load previously trained model
 lr = 1e-5 # learning rate
@@ -36,6 +37,8 @@ outDim = 5*3 # dimension of the output, number of mixtures x 3
 Nlatent = 32 # dimension of latent layers
 alpha = 1 # exponent in the distqnces
 Ntest = 500 # training iterations between display
+blur = 0.05 # see GeomLoss doc
+scaling = 0.5 # see GeomLoss doc
 
 #######################################
 ### Prepare files and variables
@@ -53,9 +56,14 @@ if not os.path.exists("results/"+model_name):
 #######################################
 ### Define the data
 #######################################
-# Generate tree
-G, dist_tree, idx_origin = data_generator.tree(Nlevel,Nrep,seed)
-Npts = dist_tree.shape[0]
+if not(load_sampler):
+    # Generate tree
+    G, dist_tree, idx_origin = data_generator.tree(Nlevel,Nrep,seed)
+    Npts = dist_tree.shape[0]
+    np.savez("results/"+model_name+"/tree.npz",G=G,dist_tree=dist_tree,idx_origin=idx_origin)
+else:
+    dat = np.load("results/"+model_name+"/tree.npz")
+    sampledPts = dat['sampledPts']
 
 # Compute distance matrix
 dist_tree_t = torch.tensor(dist_tree).type(torch_type).to(device)
@@ -106,7 +114,7 @@ if train:
 
         optimizer.zero_grad()
         out = net_MG(input)
-        dist_mat_est = utils.dist_W2_MG_1D(out)
+        dist_mat_est = utils.dist_W2_MG_1D(out,blur,scaling)
         loss = criterion((dist_tree_t[idx_train,:][:,idx_train]**2)**alpha,dist_mat_est)
         loss.backward()
         optimizer.step()
@@ -114,7 +122,7 @@ if train:
         
         if ep%Ntest==0 and ep!=0:
             out = net_MG(input_full)[Ntrain:]
-            dist_mat_est = utils.dist_W2_MG_1D(out)
+            dist_mat_est = utils.dist_W2_MG_1D(out,blur,scaling)
             dist_val = criterion((dist_tree_t[Ntrain:,:][:,Ntrain:]**2)**alpha,dist_mat_est)
             dist_max_val = torch.topk((torch.abs(dist_mat_est-(dist_tree_t[Ntrain:,:][:,Ntrain:]**2)**alpha)),1)[0].mean()
             print("{0}/{1} -- Loss over iterations: {2} -- Loss validation {3} -- (avg max {4})".format(ep,epochs,np.mean(loss_tot[-Ntest:]),dist_val,dist_max_val))
@@ -156,7 +164,7 @@ plt.savefig("results/"+model_name+"/cf.png")
 fig = plt.figure(3)
 plt.clf()
 out = net_MG(input_full)
-dist_mat_est = utils.dist_W2_MG_1D(out)
+dist_mat_est = utils.dist_W2_MG_1D(out,blur,scaling)
 diff_mat= np.log(np.abs(dist_mat_est.detach().cpu().numpy()-dist_tree_t.detach().cpu().numpy()**2)+1e-12)
 plt.imshow(diff_mat,vmin=-7,cmap='jet')
 plt.colorbar()

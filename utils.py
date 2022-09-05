@@ -165,13 +165,13 @@ Input:
  - GM1, GM2: Gaussian mixtures of size (batch, #mixture, 3). Last dimension contains 
              the mean, the standard deviation and the weight of the mixture.
 """
-def GW2_1D_t(GM0, GM1):
+def GW2_1D_t(GM0, GM1,blur=0.05,scaling=0.5):
     batch_size, outDim, _ = GM0.shape
     distr0 = GM0[:,:,:2].view(batch_size,1,outDim,2).repeat(1,batch_size,1,1).view(batch_size*batch_size,outDim,2)
     distr1 = GM1[:,:,:2].view(1,batch_size,outDim,2).repeat(batch_size,1,1,1).view(batch_size*batch_size,outDim,2)
     pi0 = GM0[:,:,2].view(batch_size,1,outDim,1).repeat(1,batch_size,1,1).view(batch_size*batch_size,outDim)
     pi1 = GM1[:,:,2].view(1,batch_size,outDim,1).repeat(batch_size,1,1,1).view(batch_size*batch_size,outDim)
-    Loss_sinkhorn = SamplesLoss("sinkhorn", p=2, blur=0.005, scaling=0.8, backend="tensorized")
+    Loss_sinkhorn = SamplesLoss("sinkhorn", p=2, blur=blur, scaling=scaling, backend="tensorized")
     distGW2 = Loss_sinkhorn(pi0,distr0*np.sqrt(2), pi1, distr1*np.sqrt(2))
     distGW2 = distGW2.view(batch_size,batch_size)    
     return distGW2
@@ -179,8 +179,8 @@ def GW2_1D_t(GM0, GM1):
 """
 Return the distance matrix between two Gaussian mixtures.
 """
-def dist_W2_MG_1D(gauss_est):
-    distGW2 = GW2_1D_t(gauss_est,gauss_est)
+def dist_W2_MG_1D(gauss_est,blur=0.05,scaling=0.5):
+    distGW2 = GW2_1D_t(gauss_est,gauss_est,blur=0.05,scaling=0.5)
     return distGW2
 
 

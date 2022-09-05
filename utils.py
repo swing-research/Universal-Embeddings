@@ -180,7 +180,7 @@ def GW2_1D_t(GM0, GM1,blur=0.05,scaling=0.5):
 Return the distance matrix between two Gaussian mixtures.
 """
 def dist_W2_MG_1D(gauss_est,blur=0.05,scaling=0.5):
-    distGW2 = GW2_1D_t(gauss_est,gauss_est,blur=0.05,scaling=0.5)
+    distGW2 = GW2_1D_t(gauss_est,gauss_est,blur,scaling)
     return distGW2
 
 

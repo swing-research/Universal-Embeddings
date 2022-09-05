@@ -40,7 +40,7 @@ NEval = 7 # number of testing points
 lr = 1e-5 # learning rate
 epochs = 10000 # number of epochs
 outDim = 5*3 # dimension of the output, number of mixtures x 3
-Nlatent = 50 # dimension of latent layers
+Nlatent = 32 # dimension of latent layers
 alpha = 1 # exponent in the distqnces
 Ntest = 500 # training iterations between display
 
@@ -89,7 +89,7 @@ G, dist_tree, idx_origin = data_generator.tree(Nlevel,Nrep,seed)
 # for i in tqdm(range(idx_origin.shape[0])):
 #     for j in range(idx_origin.shape[0]):
 #         dist_tree[i,j] = nx.dijkstra_path_length(G,idx_origin[i],idx_origin[j])
-dist_tree /= dist_tree.max()
+# dist_tree /= dist_tree.max()
 dist_tree_t = torch.tensor(dist_tree).type(torch_type).to(device)
 idx_origin_t = torch.tensor(idx_origin).type(torch_type).to(device).view(-1,1)
 

@@ -25,16 +25,16 @@ model_name = "Tree_Hyperbolic" # results will be saved in results/model_name
 Nlevel = 6 # number of tree level
 Nrep = 2 # number of leaves per node
 seed = 42 # seed parameter
-Ntrain = 117 # number of training points
-inDim = Ntrain//8 # number of anchors
+Ntrain = 111 # number of training points
+inDim = 20 # number of anchors
 
 # Training
 train = True # train the model
 load_model = False # load previously trained model
-lr = 1e-4 # learning rate
-epochs = 200000 # number of epochs
-outDim = 2 # dimension of the output, number of mixtures x 3
-Nlatent = 512 # dimension of latent layers
+lr = 1e-5 # learning rate
+epochs = 15000 # number of epochs
+outDim = 5*3 # dimension of the output, number of mixtures x 3
+Nlatent = 32 # dimension of latent layers
 alpha = 1 # exponent in the distqnces
 Ntest = 500 # training iterations between display
 
@@ -102,13 +102,13 @@ if train:
     t0 = time.time()
     for ep in range(epochs):
         # step size decay
-        if ep%(np.max([epochs//100,Ntest]))==0 and ep!=0:
+        if ep%(epochs//10000)==0 and ep!=0:
             for param_group in optimizer.param_groups:
                 param_group["lr"] = lr*(1-(1-0.1)*ep/epochs)
 
         optimizer.zero_grad()
         out = net_Hyperbolic(input)
-        dist_mat_est = utils.dist_mat_Fisher_Rao(out)
+        dist_mat_est = utils.dist_mat_Fisher_Rao(out)**2
         loss = criterion((dist_tree_t[idx_train,:][:,idx_train]**2)**alpha,dist_mat_est)
         loss.backward()
         optimizer.step()

@@ -43,6 +43,7 @@ For visualization:
 - plotly (3D plots)
 - networkx (graph plots)
 - matplotlib
+- icosphere
 
 ## Embedding of binary tree
 Reproduce the illustartions of paragraph 4.1, "Embedding of metric tree". We first need to train the three different embeddings.

@@ -25,16 +25,16 @@ model_name = "Tree_Euclidean" # results will be saved in results/model_name
 Nlevel = 6 # number of tree level
 Nrep = 2 # number of leaves per node
 seed = 42 # seed parameter
-Ntrain = 117 # number of training points
-inDim = Ntrain//8 # number of anchors
+Ntrain = 111 # number of training points
+inDim = 20 # number of anchors
 
 # Training
 train = True # train the model
 load_model = False # load previously trained model
 lr = 1e-4 # learning rate
-epochs = 200000 # number of epochs
-outDim = 20*3 # dimension of the output, number of mixtures x 3
-Nlatent = 512 # dimension of latent layers
+epochs = 15000 # number of epochs
+outDim = 5*3 # dimension of the output, number of mixtures x 3
+Nlatent = 32 # dimension of latent layers
 alpha = 1 # exponent in the distqnces
 Ntest = 500 # training iterations between display
 

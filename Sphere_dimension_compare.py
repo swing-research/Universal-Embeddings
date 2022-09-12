@@ -118,7 +118,7 @@ for j, n_rep in enumerate(range(Nrep)):
         net_E.summary()
         print("#parameters Euclidean: {0}".format(sum(p.numel() for p in net_E.parameters() if p.requires_grad)))
 
-        net_Hyperbolic = models.NetMLP(inDim, outDim, N_latent=Nlatent, p=0., bn=False, hyperbolic=True).to(device).train()
+        net_Hyperbolic = models.NetMLP(inDim, outDim//3, N_latent=Nlatent, p=0., bn=False, hyperbolic=True).to(device).train()
         net_Hyperbolic.summary()
         print("#parameters Hyperbolic: {0}".format(sum(p.numel() for p in net_Hyperbolic.parameters() if p.requires_grad)))
 
@@ -225,14 +225,14 @@ distortion_MG = (np.quantile(distortion_MG,q,axis=(2,3))/np.quantile(distortion_
 plt.figure(2)
 plt.clf()
 plt.plot(np.array(Ndim_list),distortion_E,c='r',label='Euclidean')
-plt.plot(np.array(Ndim_list),distortion_Hyperbolic,c='r',label='Hyperbolic')
+plt.plot(np.array(Ndim_list),distortion_Hyperbolic,c='k',label='Hyperbolic')
 plt.plot(np.array(Ndim_list),distortion_MG,c='b',label='MG')
 plt.legend()
 
 plt.figure(3)
 plt.clf()
 plt.plot(np.array(Ndim_list),np.abs(dist_mat-dist_mat_E).mean((0,2,3)),c='r',label='Est. Euclidean')
-plt.plot(np.array(Ndim_list),np.abs(dist_mat-dist_mat_Hyperbolic).mean((0,2,3)),c='r',label='Est. Hyperbolic')
+plt.plot(np.array(Ndim_list),np.abs(dist_mat-dist_mat_Hyperbolic).mean((0,2,3)),c='k',label='Est. Hyperbolic')
 plt.plot(np.array(Ndim_list),np.abs(dist_mat-dist_mat_MG).mean((0,2,3)),c='b',label='Est. MG')
 plt.legend()
 

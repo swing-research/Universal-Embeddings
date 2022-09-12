@@ -37,10 +37,10 @@ Nrep = 1 # number of repetitions saved (only for final visualization)
 # Training
 Ntrain = 10000 # number of points sampled on the sphere
 lr = 1e-4 # learning rate
-batch_size = 32 # batch size
+batch_size = 128 # batch size
 epochs = 50000 # number of epochs
 # inDim = 10 # number of anchors
-outDim = 15 # dimension of the output
+outDim = 5 # dimension of the output
 Nlatent = 200 # dimension of latent layers
 alpha = 1 # exponent in the distqnces
 Ntest = 500 # training iterations between display
@@ -77,15 +77,27 @@ def generate_points_t(N,dim=3):
 def distance_hyperbolic(dist_vec):
     n = dist_vec.shape[1]
     x = dist_vec.permute(1,0).contiguous().view(-1,dist_vec.shape[0])
-    inner = -2*torch.matmul(x.transpose(1, 0), x*n)
+    inner = -2*torch.matmul(x.transpose(1, 0), x)
     xx = torch.sum(x**2, dim=0, keepdim=True)
-    pairwise_distance = xx + inner + n**2*xx.transpose(1, 0)
-    
-    denom = torch.matmul(x[n-2:-1,:].transpose(1, 0), x[n-2:-1,:]*n)
+    pairwise_distance = xx + inner + xx.transpose(1, 0)
+    denom = 2*torch.matmul(dist_vec[:,-1][:,None], dist_vec[:,-1][None])
 
-    dst = torch.acosh(1+pairwise_distance/(denom+1e-8))
+    dst = torch.acosh(1+torch.nn.ReLU()((pairwise_distance)/(denom+1e-6)))
+
+    # dst = torch.acosh(1+(torch.maximum(pairwise_distance,torch.tensor(0)))/(denom+1e-6))
+
 
     return dst
+
+# def distance_hyperbolic(dist_vec):
+#     n = dist_vec.shape[1]
+#     x = dist_vec.permute(1,0).contiguous().view(-1,dist_vec.shape[0])
+#     inner = -2*torch.matmul(x.transpose(1, 0), x*n)
+#     xx = torch.sum(x**2, dim=0, keepdim=True)
+#     pairwise_distance = xx + inner + n**2*xx.transpose(1, 0)
+#     denom = (1-xx)*(1-xx.transpose(1, 0))
+#     dst = torch.acosh(1+2*pairwise_distance/(denom+1e-8))
+#     return dst
 
 #######################################
 ### Define the anchors
@@ -94,7 +106,7 @@ if not(train):
     loss_train = []
     loss_test = []
 
-Ndim_list = np.arange(15,50,4)
+Ndim_list = np.arange(31,50,4)
 #Ndim_list = [3,4,5,6]
 #Ndim_list = [3,4,5,6,7,11,15,19,23,27,31,35,39]
 #Ndim_list = np.arange(10,100,10)
@@ -126,7 +138,7 @@ for Ndim in Ndim_list:
     #######################################
     ### Define network
     #######################################
-    net_Hyperbolic = models.NetMLP(inDim, outDim, N_latent=Nlatent, p=0., bn=False, hyperbolic=True).to(device).train()
+    net_Hyperbolic = models.NetMLP(inDim, outDim, N_latent=Nlatent, p=0.2, bn=False, hyperbolic=True).to(device).train()
     net_Hyperbolic.summary()
     print("#parameters: {0}".format(sum(p.numel() for p in net_Hyperbolic.parameters() if p.requires_grad)))
 
@@ -158,12 +170,12 @@ for Ndim in Ndim_list:
 
             optimizer.zero_grad()
             out = net_Hyperbolic(input)
-            dist_mat_est = distance_hyperbolic(out)
+            # out = out/torch.norm(out,dim=1,keepdim=True)
+            dist_mat_est = distance_hyperbolic(out)**2
 
-
-
-
-
+            # if ep==0:
+            if torch.isnan(dist_mat_est).sum().item() >0:
+                a=fdefr
 
             loss = criterion(dist_true_t[ind,:][:,ind]**2**alpha,dist_mat_est)
             loss.backward()
@@ -176,7 +188,8 @@ for Ndim in Ndim_list:
                 input = torch.acos(torch.clamp(torch.matmul(Xtest,X_anchor_t.transpose(1,0)),-1+eps,1-eps))/np.pi
                 dist_test_t = (torch.acos(torch.clamp(torch.matmul(Xtest,Xtest.transpose(1,0)),-1+eps,1-eps))/np.pi).fill_diagonal_(0)
                 out = net_Hyperbolic(input)
-                dist_mat_test = distance_hyperbolic(out)
+                # out = out/torch.norm(out,dim=1,keepdim=True)
+                dist_mat_test = distance_hyperbolic(out)**2
                 dist_val = criterion(dist_mat_test,dist_test_t**2**alpha)
                 dist_max_val = torch.topk((torch.abs(dist_mat_test-dist_test_t**2**alpha)),1)[0].mean()
                 abs_err = np.abs(dist_mat_test.detach().cpu().numpy()-dist_test_t.detach().cpu().numpy()**2).mean()

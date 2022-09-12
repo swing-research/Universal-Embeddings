@@ -123,6 +123,16 @@ def distance_matrix_diff(v1,v2):
     pairwise_distance = xx1 + inner + xx2.transpose(1, 0)
     return pairwise_distance
 
+def distance_hyperbolic(dist_vec):
+    n = dist_vec.shape[1]
+    x = dist_vec.permute(1,0).contiguous().view(-1,dist_vec.shape[0])
+    inner = -2*torch.matmul(x.transpose(1, 0), x)
+    xx = torch.sum(x**2, dim=0, keepdim=True)
+    pairwise_distance = xx + inner + xx.transpose(1, 0)
+    denom = 2*torch.matmul(dist_vec[:,-1][:,None], dist_vec[:,-1][None])
+    dst = torch.acosh(1+torch.nn.ReLU()((pairwise_distance)/(denom+1e-6)))
+    return dst
+
 """
 Distance matrix induced by the Fisher Information matrix between two Gaussian distribution.
 dist1, dist2: size (batch,2), containing mean and variance of the 1d Gaussian distribution.

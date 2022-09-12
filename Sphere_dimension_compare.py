@@ -25,6 +25,7 @@ since function inside are particularly usefull and difficult to use.
 # # Save
 model_name_E = "Sphere_dimension_Euclidean" # results will be saved in results/model_name
 model_name_MG = "Sphere_dimension_MG" # results will be saved in results/model_name
+model_name_Hyperbolic = "Sphere_dimension_Hyperbolic" # results will be saved in results/model_name
 model_name_sampling = "Sphere_dimension" # folder where sampling points are saved
 model_name = "Sphere_dimension" # folder where to save results
 
@@ -60,16 +61,22 @@ def generate_points_t(N,dim=3):
 Ndim_list = np.arange(15,50,4)
 loss_train_MG = np.zeros((Nrep,len(Ndim_list)))
 loss_train_E = np.zeros((Nrep,len(Ndim_list)))
+loss_train_Hyperbolic = np.zeros((Nrep,len(Ndim_list)))
 loss_test_MG = np.zeros((Nrep,len(Ndim_list)))
 loss_test_E = np.zeros((Nrep,len(Ndim_list)))
+loss_test_Hyperbolic = np.zeros((Nrep,len(Ndim_list)))
 t_train_MG = np.zeros((Nrep,len(Ndim_list)))
 t_train_E = np.zeros((Nrep,len(Ndim_list)))
+t_train_Hyperbolic = np.zeros((Nrep,len(Ndim_list)))
 t_test_MG = np.zeros((Nrep,len(Ndim_list)))
 t_test_E = np.zeros((Nrep,len(Ndim_list)))
+t_test_Hyperbolic = np.zeros((Nrep,len(Ndim_list)))
 dist_mat_err_MG = np.zeros((Nrep,len(Ndim_list),batch_size,batch_size))
 dist_mat_err_E = np.zeros((Nrep,len(Ndim_list),batch_size,batch_size))
+dist_mat_err_Hyperbolic = np.zeros((Nrep,len(Ndim_list),batch_size,batch_size))
 dist_mat_MG = np.zeros((Nrep,len(Ndim_list),batch_size,batch_size))
 dist_mat_E = np.zeros((Nrep,len(Ndim_list),batch_size,batch_size))
+dist_mat_Hyperbolic = np.zeros((Nrep,len(Ndim_list),batch_size,batch_size))
 dist_mat = np.zeros((Nrep,len(Ndim_list),batch_size,batch_size))
 for j, n_rep in enumerate(range(Nrep)):
     for i, Ndim in enumerate(Ndim_list):
@@ -111,6 +118,10 @@ for j, n_rep in enumerate(range(Nrep)):
         net_E.summary()
         print("#parameters Euclidean: {0}".format(sum(p.numel() for p in net_E.parameters() if p.requires_grad)))
 
+        net_Hyperbolic = models.NetMLP(inDim, outDim, N_latent=Nlatent, p=0., bn=False, hyperbolic=True).to(device).train()
+        net_Hyperbolic.summary()
+        print("#parameters Hyperbolic: {0}".format(sum(p.numel() for p in net_Hyperbolic.parameters() if p.requires_grad)))
+
         # load weights
         checkpoint = torch.load("results/"+model_name_MG+"/net_Ndim_"+str(Ndim)+"_"+str(n_rep)+".pt",map_location=device)
         net_MG.load_state_dict(checkpoint['model_state_dict'])
@@ -121,6 +132,11 @@ for j, n_rep in enumerate(range(Nrep)):
         net_E.load_state_dict(checkpoint['model_state_dict'])
         net_E = net_E.eval()
         net_E = net_E.train(False)
+
+        checkpoint = torch.load("results/"+model_name_Hyperbolic+"/net_Ndim_"+str(Ndim)+"_"+str(n_rep)+".pt",map_location=device)
+        net_Hyperbolic.load_state_dict(checkpoint['model_state_dict'])
+        net_Hyperbolic = net_Hyperbolic.eval()
+        net_Hyperbolic = net_Hyperbolic.train(False)
 
         #######################################
         ### Load data
@@ -136,6 +152,12 @@ for j, n_rep in enumerate(range(Nrep)):
         t_train = checkpoint['t_train']
         loss_train_E[j,i] = np.mean(loss_tot)
         t_train_E[j,i] = t_train
+
+        checkpoint = torch.load("results/"+model_name_Hyperbolic+"/net_Ndim_"+str(Ndim)+"_"+str(n_rep)+".pt",map_location=device)
+        loss_tot = checkpoint['loss_tot']
+        t_train = checkpoint['t_train']
+        loss_train_Hyperbolic[j,i] = np.mean(loss_tot)
+        t_train_Hyperbolic[j,i] = t_train
 
         #######################################
         ### Evaluate data
@@ -165,6 +187,16 @@ for j, n_rep in enumerate(range(Nrep)):
         t_test_E[j,i] = t1-t0
         loss_test_E[j,i] = criterion(dist_true_t**2,dist_est).item()
 
+        t0 = time.time()
+        out = net_Hyperbolic(input)
+        t1 = time.time()
+        dist_est = utils.distance_hyperbolic(out)**2
+        err = np.abs(dist_est.detach().cpu().numpy()-dist_true_t.detach().cpu().numpy()**2)
+        dist_mat_err_Hyperbolic[j,i] = err
+        dist_mat_Hyperbolic[j,i] = dist_est.detach().cpu().numpy()
+        t_test_Hyperbolic[j,i] = t1-t0
+        loss_test_Hyperbolic[j,i] = criterion(dist_true_t**2,dist_est).item()
+
         dist_mat[j,i] = dist_true_t.fill_diagonal_(1).detach().cpu().numpy()**2
 
 #######################################
@@ -177,25 +209,30 @@ for j, n_rep in enumerate(range(Nrep)):
 # plt.legend()
 
 distortion_E = dist_mat_E/dist_mat
+distortion_Hyperbolic = dist_mat_Hyperbolic/dist_mat
 distortion_MG =np.abs(dist_mat_MG)/dist_mat
 for j, n_rep in enumerate(range(Nrep)):
     for i, Ndim in enumerate(Ndim_list):
         np.fill_diagonal(distortion_E[j,i],1)
+        np.fill_diagonal(distortion_Hyperbolic[j,i],1)
         np.fill_diagonal(distortion_MG[j,i],1)
 
 q = 0.99
 distortion_E = (np.quantile(distortion_E,q,axis=(2,3))/np.quantile(distortion_E,1-q,axis=(2,3))).mean(0)
+distortion_Hyperbolic = (np.quantile(distortion_Hyperbolic,q,axis=(2,3))/np.quantile(distortion_Hyperbolic,1-q,axis=(2,3))).mean(0)
 distortion_MG = (np.quantile(distortion_MG,q,axis=(2,3))/np.quantile(distortion_MG,1-q,axis=(2,3))).mean(0)
 
 plt.figure(2)
 plt.clf()
 plt.plot(np.array(Ndim_list),distortion_E,c='r',label='Euclidean')
+plt.plot(np.array(Ndim_list),distortion_Hyperbolic,c='r',label='Hyperbolic')
 plt.plot(np.array(Ndim_list),distortion_MG,c='b',label='MG')
 plt.legend()
 
 plt.figure(3)
 plt.clf()
 plt.plot(np.array(Ndim_list),np.abs(dist_mat-dist_mat_E).mean((0,2,3)),c='r',label='Est. Euclidean')
+plt.plot(np.array(Ndim_list),np.abs(dist_mat-dist_mat_Hyperbolic).mean((0,2,3)),c='r',label='Est. Hyperbolic')
 plt.plot(np.array(Ndim_list),np.abs(dist_mat-dist_mat_MG).mean((0,2,3)),c='b',label='Est. MG')
 plt.legend()
 
@@ -207,7 +244,9 @@ plt.legend()
 # plt.legend()
 
 np.savetxt("results/"+model_name+"/losses.txt", 
-    (np.array(Ndim_list),np.abs(dist_mat-dist_mat_E).mean((0,2,3)), np.abs(dist_mat-dist_mat_MG).mean((0,2,3))),fmt='%.3f',delimiter=',')
+    (np.array(Ndim_list),np.abs(dist_mat-dist_mat_E).mean((0,2,3)),
+    np.array(Ndim_list),np.abs(dist_mat-dist_mat_Hyperbolic).mean((0,2,3)),
+    np.abs(dist_mat-dist_mat_MG).mean((0,2,3))),fmt='%.3f',delimiter=',')
 
 
 #######################################

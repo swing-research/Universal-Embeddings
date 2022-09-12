@@ -102,13 +102,14 @@ INPUTS:
  -N_latent: width of the hidden layers.
 """
 class NetMLP(nn.Module):
-    def __init__(self,inDim, outDim, N_latent=8, p=0., bn=True):
+    def __init__(self,inDim, outDim, N_latent=8, p=0., bn=True, hyperbolic=False):
         super(NetMLP, self).__init__()
         self.N_latent = N_latent
         self.inDim = inDim
         self.outDim = outDim
         self.p = p
         self.bn = bn
+        self.hyperbolic = hyperbolic
 
         self.Gauss_lin1 = nn.Linear(self.inDim, self.N_latent)
         self.Gauss_lin2 = nn.Linear(self.N_latent, self.N_latent)
@@ -152,6 +153,8 @@ class NetMLP(nn.Module):
             y5 = self.bn5(y5)
         y6 = torch.cat((y1,y2,y3,y4,y5),dim=1)
         y = self.Gauss_lin6(y6)
+        if self.hyperbolic:
+            y = torch.cat((y[:,:-1],torch.abs(y[:,self.outDim-2:-1])),1)
         return y
     
     def summary(self):

@@ -106,7 +106,7 @@ if not(train):
     loss_train = []
     loss_test = []
 
-Ndim_list = np.arange(31,50,4)
+Ndim_list = np.arange(15,50,4)
 #Ndim_list = [3,4,5,6]
 #Ndim_list = [3,4,5,6,7,11,15,19,23,27,31,35,39]
 #Ndim_list = np.arange(10,100,10)

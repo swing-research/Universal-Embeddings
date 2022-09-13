@@ -19,7 +19,7 @@ Illustrate the embedding into Hyperbolic space of a tree using the proposed prob
 """
 
 # Save
-model_name = "Tree_Hyperbolic" # results will be saved in results/model_name
+model_name = "Tree_Hyperbolic_dim15" # results will be saved in results/model_name
 
 # Data generation
 Nlevel = 6 # number of tree level
@@ -80,7 +80,10 @@ plt.savefig("results/"+model_name+"/TreeTrue.png")
 ### Trainning
 #######################################
 ## Define the model
-net_Hyperbolic = models.MG2_transformer(inDim, outDim, N_latent=Nlatent, weights=False, p=0., bn=False).to(device).train()
+# net_Hyperbolic = models.MG2_transformer(inDim, outDim, N_latent=Nlatent, weights=False, p=0., bn=False).to(device).train()
+# net_Hyperbolic.summary()
+# print("#parameters: {0}".format(sum(p.numel() for p in net_Hyperbolic.parameters() if p.requires_grad)))
+net_Hyperbolic = models.NetMLP(inDim, outDim, N_latent=Nlatent, p=0., bn=False, hyperbolic=True).to(device).train()
 net_Hyperbolic.summary()
 print("#parameters: {0}".format(sum(p.numel() for p in net_Hyperbolic.parameters() if p.requires_grad)))
 
@@ -108,7 +111,8 @@ if train:
 
         optimizer.zero_grad()
         out = net_Hyperbolic(input)
-        dist_mat_est = utils.dist_mat_Fisher_Rao(out)**2
+        # dist_mat_est = utils.dist_mat_Fisher_Rao(out)**2
+        dist_mat_est = utils.distance_hyperbolic(out)**2
         loss = criterion((dist_tree_t[idx_train,:][:,idx_train]**2)**alpha,dist_mat_est)
         loss.backward()
         optimizer.step()
@@ -116,7 +120,8 @@ if train:
         
         if ep%Ntest==0 and ep!=0:
             out = net_Hyperbolic(input_full)[Ntrain:]
-            dist_mat_est = utils.dist_mat_Fisher_Rao(out)
+            # dist_mat_est = utils.dist_mat_Fisher_Rao(out)
+            dist_mat_est = utils.distance_hyperbolic(out)**2
             dist_val = criterion((dist_tree_t[Ntrain:,:][:,Ntrain:]**2)**alpha,dist_mat_est)
             dist_max_val = torch.topk((torch.abs(dist_mat_est-(dist_tree_t[Ntrain:,:][:,Ntrain:]**2)**alpha)),1)[0].mean()
             print("{0}/{1} -- Loss over iterations: {2} -- Loss validation {3} -- (avg max {4})".format(ep,epochs,np.mean(loss_tot[-Ntest:]),dist_val,dist_max_val))
@@ -158,7 +163,8 @@ plt.savefig("results/"+model_name+"/cf.png")
 fig = plt.figure(3)
 plt.clf()
 out = net_Hyperbolic(input_full)
-dist_mat_est = utils.dist_mat_Fisher_Rao(out)
+# dist_mat_est = utils.dist_mat_Fisher_Rao(out)
+dist_mat_est = utils.distance_hyperbolic(out)**2
 diff_mat= np.log(np.abs(dist_mat_est.detach().cpu().numpy()-dist_tree_t.detach().cpu().numpy()**2)+1e-12)
 plt.imshow(diff_mat,vmin=-7,cmap='jet')
 plt.colorbar()

@@ -24,6 +24,7 @@ Compare enbedding in Hyperbolic, Euclidean and Gaussian mixture spaces.
 model_name1 = "Tree_MG"
 model_name2 = "Tree_Euclidean"
 model_name3 = "Tree_Hyperbolic"
+model_name4 = "Tree_Hyperbolic_dim15"
 save_name = "Compare_Tree"
 
 # Data generation
@@ -58,7 +59,7 @@ if not os.path.exists("results/"+save_name):
 if not(load_sampler):
     # Generate tree
     G, dist_tree, idx_origin = data_generator.tree(Nlevel,Nrep,seed)
-    np.savez("results/"+model_name1+"/tree.npz",G=G,dist_tree=dist_tree,idx_origin=idx_origin)
+    # np.savez("results/"+model_name1+"/tree.npz",G=G,dist_tree=dist_tree,idx_origin=idx_origin)
 else:
     dat = np.load("results/"+model_name1+"/tree.npz")
     G = dat['G']
@@ -105,12 +106,31 @@ print("Euclidean model: #parameters: {0}".format(sum(p.numel() for p in net_Eucl
 # Model 3: 1D 
 outDim = 2 # dimension of the output
 Nlatent = 32 # dimension of latent layers
-net_Hyperbolic = models.MG2_transformer(inDim, outDim, N_latent=Nlatent, weights=False, p=0., bn=False).to(device)
+
+# net_Hyperbolic2 = models.NetMLP(inDim, outDim, N_latent=Nlatent, p=0., bn=False, hyperbolic=True).to(device).train()
+# net_Hyperbolic2.summary()
+# print("#parameters: {0}".format(sum(p.numel() for p in net_Hyperbolic2.parameters() if p.requires_grad)))
+net_Hyperbolic2 = models.MG2_transformer(inDim, outDim, N_latent=Nlatent, weights=False, p=0., bn=False).to(device)
 checkpoint = torch.load("results/"+model_name3+"/net.pt",map_location=device)
+net_Hyperbolic2.load_state_dict(checkpoint['model_state_dict'])
+net_Hyperbolic2 = net_Hyperbolic2.eval()
+net_Hyperbolic2 = net_Hyperbolic2.train(False)
+loss3 = checkpoint['loss_tot']
+net_Hyperbolic2.summary()
+print("Hyperbolic model: #parameters: {0}".format(sum(p.numel() for p in net_Hyperbolic2.parameters() if p.requires_grad)))
+
+
+# Model 4: 15D 
+outDim = 15 # dimension of the output
+Nlatent = 32 # dimension of latent layers
+net_Hyperbolic = models.NetMLP(inDim, outDim, N_latent=Nlatent, p=0., bn=False, hyperbolic=True).to(device).train()
+net_Hyperbolic.summary()
+print("#parameters: {0}".format(sum(p.numel() for p in net_Hyperbolic.parameters() if p.requires_grad)))
+checkpoint = torch.load("results/"+model_name4+"/net.pt",map_location=device)
 net_Hyperbolic.load_state_dict(checkpoint['model_state_dict'])
 net_Hyperbolic = net_Hyperbolic.eval()
 net_Hyperbolic = net_Hyperbolic.train(False)
-loss3 = checkpoint['loss_tot']
+loss4 = checkpoint['loss_tot']
 net_Hyperbolic.summary()
 print("Hyperbolic model: #parameters: {0}".format(sum(p.numel() for p in net_Hyperbolic.parameters() if p.requires_grad)))
 
@@ -125,7 +145,8 @@ plt.figure(2)
 plt.clf()
 plt.plot(np.array(loss1[st:]),label='Gaussian mixture')
 plt.plot(np.array(loss2[st:]),label='Euclidean')
-plt.plot(np.array(loss3[st:]),label='Gaussian')
+plt.plot(np.array(loss3[st:]),label='Hyperbolic dim 2')
+plt.plot(np.array(loss4[st:]),label='Hyperbolic dim 15')
 plt.legend()
 plt.savefig("results/"+save_name+"/cf.png")
 
@@ -141,10 +162,14 @@ err2 = np.abs(dist_mat_est2.detach().cpu().numpy()-dist_tree_t.detach().cpu().nu
 diff_mat2 = np.log(err2+1e-12)
 
 out3 = net_Hyperbolic(input_full)
-# dist_mat_est3 = utils.dist_mat_Fisher_Rao(out3)**2
-dist_mat_est3 = utils.distance_hyperbolic(out3)**2
+dist_mat_est3 = utils.dist_mat_Fisher_Rao(out3)**2
 err3 = np.abs(dist_mat_est3.detach().cpu().numpy()-dist_tree_t.detach().cpu().numpy()**2)
 diff_mat3 = np.log(err3+1e-12)
+
+out4 = net_Hyperbolic(input_full)
+dist_mat_est4 = utils.distance_hyperbolic(out3)**2
+err4 = np.abs(dist_mat_est4.detach().cpu().numpy()-dist_tree_t.detach().cpu().numpy()**2)
+diff_mat4 = np.log(err4+1e-12)
 
 fig = plt.figure(3)
 plt.clf()
@@ -172,22 +197,22 @@ plt.title('Difference dist mat -- Hyperbolic')
 
 
 print("On trainning points")
-print("Mean: MG {0} -- Euclidean {1} -- Hyperbolic {2}".format(err1[:Ntrain,:Ntrain].mean(),err2[:Ntrain,:Ntrain].mean(),err3[:Ntrain,:Ntrain].mean()))
-print("Max: MG {0} -- Euclidean {1} -- Hyperbolic {2}".format(err1[:Ntrain,:Ntrain].max(),err2[:Ntrain,:Ntrain].max(),err3[:Ntrain,:Ntrain].max()))
+print("Mean: MG {0} -- Euclidean {1} -- Hyperbolic dim 2 {2} -- Hyperbolic dim 15 {3}".format(err1[:Ntrain,:Ntrain].mean(),err2[:Ntrain,:Ntrain].mean(),err3[:Ntrain,:Ntrain].mean(),err4[:Ntrain,:Ntrain].mean()))
+print("Max: MG {0} -- Euclidean {1} -- Hyperbolic 2 {2} -- Hyperbolic dim 15 {3}".format(err1[:Ntrain,:Ntrain].max(),err2[:Ntrain,:Ntrain].max(),err3[:Ntrain,:Ntrain].max(),err4[:Ntrain,:Ntrain].max()))
 
 print("On new points")
-print("Mean: MG {0} -- Euclidean {1} -- Hyperbolic {2}".format(err1[Ntrain:,Ntrain:].mean(),err2[Ntrain:,Ntrain:].mean(),err3[Ntrain:,Ntrain:].mean()))
-print("Max: MG {0} -- Euclidean {1} -- Hyperbolic {2}".format(err1[Ntrain:,Ntrain:].max(),err2[Ntrain:,Ntrain:].max(),err3[Ntrain:,Ntrain:].max()))
+print("Mean: MG {0} -- Euclidean {1} -- Hyperbolic 2 {2} -- Hyperbolic dim 15 {3}".format(err1[Ntrain:,Ntrain:].mean(),err2[Ntrain:,Ntrain:].mean(),err3[Ntrain:,Ntrain:].mean(),err4[Ntrain:,Ntrain:].mean()))
+print("Max: MG {0} -- Euclidean {1} -- Hyperbolic 2 {2} -- Hyperbolic dim 15 {3}".format(err1[Ntrain:,Ntrain:].max(),err2[Ntrain:,Ntrain:].max(),err3[Ntrain:,Ntrain:].max(),err4[Ntrain:,Ntrain:].max()))
 
 print("On all")
-print("Mean: MG {0} -- Euclidean {1} -- Hyperbolic {2}".format(err1.mean(),err2.mean(),err3.mean()))
-print("Max: MG {0} -- Euclidean {1} -- Hyperbolic {2}".format(err1.max(),err2.max(),err3.max()))
+print("Mean: MG {0} -- Euclidean {1} -- Hyperbolic 2 {2} -- Hyperbolic dim 15 {3}".format(err1.mean(),err2.mean(),err3.mean(),err4.mean()))
+print("Max: MG {0} -- Euclidean {1} -- Hyperbolic 2 {2} -- Hyperbolic dim 15 {3}".format(err1.max(),err2.max(),err3.max(),err4.max()))
 
 np.savetxt("results/"+save_name+"/losses.txt",
-    ((err1[:Ntrain,:Ntrain].mean(),err2[:Ntrain,:Ntrain].mean(),err3[:Ntrain,:Ntrain].mean()),
-    (err1[:Ntrain,:Ntrain].max(),err2[:Ntrain,:Ntrain].max(),err3[:Ntrain,:Ntrain].max()),
-    (err1[Ntrain:,Ntrain:].mean(),err2[Ntrain:,Ntrain:].mean(),err3[Ntrain:,Ntrain:].mean()),
-    (err1[Ntrain:,Ntrain:].max(),err2[Ntrain:,Ntrain:].max(),err3[Ntrain:,Ntrain:].max())),fmt='%.3f',delimiter='---')
+    ((err1[:Ntrain,:Ntrain].mean(),err2[:Ntrain,:Ntrain].mean(),err3[:Ntrain,:Ntrain].mean(),err4[:Ntrain,:Ntrain].mean()),
+    (err1[:Ntrain,:Ntrain].max(),err2[:Ntrain,:Ntrain].max(),err3[:Ntrain,:Ntrain].max(),err4[:Ntrain,:Ntrain].max()),
+    (err1[Ntrain:,Ntrain:].mean(),err2[Ntrain:,Ntrain:].mean(),err3[Ntrain:,Ntrain:].mean(),err4[Ntrain:,Ntrain:].mean()),
+    (err1[Ntrain:,Ntrain:].max(),err2[Ntrain:,Ntrain:].max(),err3[Ntrain:,Ntrain:].max(),err4[Ntrain:,Ntrain:].max())),fmt='%.3f',delimiter='---')
 
 
 

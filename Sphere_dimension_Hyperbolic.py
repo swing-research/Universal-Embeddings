@@ -74,31 +74,6 @@ def generate_points_t(N,dim=3):
     return out
 
 
-def distance_hyperbolic(dist_vec):
-    n = dist_vec.shape[1]
-    x = dist_vec.permute(1,0).contiguous().view(-1,dist_vec.shape[0])
-    inner = -2*torch.matmul(x.transpose(1, 0), x)
-    xx = torch.sum(x**2, dim=0, keepdim=True)
-    pairwise_distance = xx + inner + xx.transpose(1, 0)
-    denom = 2*torch.matmul(dist_vec[:,-1][:,None], dist_vec[:,-1][None])
-
-    dst = torch.acosh(1+torch.nn.ReLU()((pairwise_distance)/(denom+1e-6)))
-
-    # dst = torch.acosh(1+(torch.maximum(pairwise_distance,torch.tensor(0)))/(denom+1e-6))
-
-
-    return dst
-
-# def distance_hyperbolic(dist_vec):
-#     n = dist_vec.shape[1]
-#     x = dist_vec.permute(1,0).contiguous().view(-1,dist_vec.shape[0])
-#     inner = -2*torch.matmul(x.transpose(1, 0), x*n)
-#     xx = torch.sum(x**2, dim=0, keepdim=True)
-#     pairwise_distance = xx + inner + n**2*xx.transpose(1, 0)
-#     denom = (1-xx)*(1-xx.transpose(1, 0))
-#     dst = torch.acosh(1+2*pairwise_distance/(denom+1e-8))
-#     return dst
-
 #######################################
 ### Define the anchors
 #######################################
@@ -149,9 +124,6 @@ for Ndim in Ndim_list:
     # Prepare training
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(net_Hyperbolic.parameters(), lr, weight_decay=5e-6)
-    # optimizer = torch.optim.RMSprop(net_full.parameters(), lr=lr, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
-    # optimizer = torch.optim.Adagrad(net_full.parameters(), lr=lr, lr_decay=0, weight_decay=0, initial_accumulator_value=0, eps=1e-10)
-    # optimizer = torch.optim.SGD(net_full.parameters(), lr=lr, momentum=0.7)
 
     X = generate_points_t(Ntrain,dim=Ndim)
     dist_true_t = (torch.acos(torch.clamp(torch.matmul(X,X.transpose(1,0)),-1+eps,1-eps))/np.pi).fill_diagonal_(0)
@@ -170,13 +142,7 @@ for Ndim in Ndim_list:
 
             optimizer.zero_grad()
             out = net_Hyperbolic(input)
-            # out = out/torch.norm(out,dim=1,keepdim=True)
-            dist_mat_est = distance_hyperbolic(out)**2
-
-            # if ep==0:
-            if torch.isnan(dist_mat_est).sum().item() >0:
-                a=fdefr
-
+            dist_mat_est = utils.distance_hyperbolic(out)**2
             loss = criterion(dist_true_t[ind,:][:,ind]**2**alpha,dist_mat_est)
             loss.backward()
             optimizer.step()

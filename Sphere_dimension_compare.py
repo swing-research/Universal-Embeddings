@@ -118,7 +118,7 @@ for j, n_rep in enumerate(range(Nrep)):
         net_E.summary()
         print("#parameters Euclidean: {0}".format(sum(p.numel() for p in net_E.parameters() if p.requires_grad)))
 
-        net_Hyperbolic = models.NetMLP(inDim, outDim//3, N_latent=Nlatent, p=0., bn=False, hyperbolic=True).to(device).train()
+        net_Hyperbolic = models.NetMLP(inDim, outDim, N_latent=Nlatent, p=0., bn=False, hyperbolic=True).to(device).train()
         net_Hyperbolic.summary()
         print("#parameters Hyperbolic: {0}".format(sum(p.numel() for p in net_Hyperbolic.parameters() if p.requires_grad)))
 
@@ -246,7 +246,7 @@ plt.legend()
 np.savetxt("results/"+model_name+"/losses.txt", 
     (np.array(Ndim_list),np.abs(dist_mat-dist_mat_E).mean((0,2,3)),
     np.array(Ndim_list),np.abs(dist_mat-dist_mat_Hyperbolic).mean((0,2,3)),
-    np.abs(dist_mat-dist_mat_MG).mean((0,2,3))),fmt='%.3f',delimiter=',')
+    np.array(Ndim_list),np.abs(dist_mat-dist_mat_MG).mean((0,2,3))),fmt='%.3f',delimiter=',')
 
 
 #######################################

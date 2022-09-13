@@ -141,7 +141,8 @@ err2 = np.abs(dist_mat_est2.detach().cpu().numpy()-dist_tree_t.detach().cpu().nu
 diff_mat2 = np.log(err2+1e-12)
 
 out3 = net_Hyperbolic(input_full)
-dist_mat_est3 = utils.dist_mat_Fisher_Rao(out3)**2
+# dist_mat_est3 = utils.dist_mat_Fisher_Rao(out3)**2
+dist_mat_est3 = utils.distance_hyperbolic(out3)**2
 err3 = np.abs(dist_mat_est3.detach().cpu().numpy()-dist_tree_t.detach().cpu().numpy()**2)
 diff_mat3 = np.log(err3+1e-12)
 

@@ -1,5 +1,5 @@
 # Universal embeddings
-Repository for 'Probabilistic Graph Transformers Are Universal Feature Maps Capable of Representing any Finite Dataset' [(paper)](https://arxiv.org/)
+Repository for 'Probabilistic Graph Transformers Are Universal Feature Maps Capable of Representing any Finite Dataset' [(paper)]([https://arxiv.org/](https://www.jmlr.org/papers/v24/22-1246.html))
 
 These codes were used to generate illustrations of the paper. 
 
